@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>해외 배포 — Focusa</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; background: #fff; max-width: 480px; margin: 0 auto; min-height: 100vh; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #eee; position: sticky; top: 0; background: #fff; z-index: 10; }
+    .header .back { font-size: 20px; cursor: pointer; color: #333; text-decoration: none; }
+    .header h1 { font-size: 17px; font-weight: 600; }
+    .header .cart-btn { background: #1a1a2e; color: #fff; border: none; border-radius: 20px; padding: 7px 14px; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+    .cart-btn .badge { background: #e84040; color: #fff; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; display: flex; align-items: center; justify-content: center; }
+
+    /* Step indicator */
+    .steps { display: flex; align-items: center; padding: 16px 20px; gap: 0; }
+    .step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+    .step::after { content: ''; position: absolute; top: 12px; left: 50%; width: 100%; height: 2px; background: #e0e0e0; z-index: 0; }
+    .step:last-child::after { display: none; }
+    .step-circle { width: 24px; height: 24px; border-radius: 50%; background: #e0e0e0; color: #999; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; position: relative; z-index: 1; }
+    .step.active .step-circle { background: #1a1a2e; color: #fff; }
+    .step.done .step-circle { background: #4caf50; color: #fff; }
+    .step-label { font-size: 11px; color: #999; margin-top: 4px; }
+    .step.active .step-label { color: #1a1a2e; font-weight: 600; }
+
+    /* Country grid */
+    .section-title { padding: 20px 20px 12px; font-size: 16px; font-weight: 700; color: #1a1a2e; }
+    .country-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 16px 24px; }
+    .country-card { border: 2px solid #eee; border-radius: 14px; padding: 20px 16px; cursor: pointer; transition: all 0.15s; text-align: center; }
+    .country-card:hover { border-color: #1a1a2e; }
+    .country-card.selected { border-color: #1a1a2e; background: #f0f4ff; }
+    .country-flag { font-size: 36px; margin-bottom: 8px; }
+    .country-name { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+    .country-sub { font-size: 12px; color: #999; margin-top: 4px; }
+    .country-count { font-size: 11px; color: #e84040; font-weight: 600; margin-top: 6px; }
+
+    /* Media list (step 2) */
+    .media-list { padding: 0 16px; }
+    .media-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+    .media-check { width: 22px; height: 22px; border: 2px solid #ddd; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+    .media-check.checked { background: #1a1a2e; border-color: #1a1a2e; }
+    .media-check.checked::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 700; }
+    .media-info { flex: 1; margin: 0 12px; }
+    .media-name { font-size: 15px; font-weight: 500; color: #1a1a2e; }
+    .media-desc { font-size: 12px; color: #999; margin-top: 2px; }
+    .media-price { font-size: 15px; font-weight: 700; color: #1a1a2e; text-align: right; }
+    .media-unit { font-size: 11px; color: #999; text-align: right; }
+
+    /* Package options */
+    .package-list { padding: 0 16px 80px; }
+    .package-card { border: 2px solid #eee; border-radius: 14px; padding: 18px; margin-bottom: 12px; cursor: pointer; transition: all 0.15s; }
+    .package-card.selected { border-color: #1a1a2e; background: #f0f4ff; }
+    .pkg-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .pkg-name { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+    .pkg-price { font-size: 18px; font-weight: 800; color: #e84040; }
+    .pkg-desc { font-size: 13px; color: #666; margin-top: 6px; }
+    .pkg-includes { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .pkg-tag { font-size: 11px; background: #f0f4ff; color: #1a1a2e; padding: 3px 8px; border-radius: 20px; }
+    .pkg-badge { background: #e84040; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600; }
+
+    /* Sticky bottom */
+    .sticky-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 1px solid #eee; padding: 12px 16px; display: none; z-index: 30; }
+    .sticky-bar.show { display: block; }
+    .sticky-inner { display: flex; justify-content: space-between; align-items: center; }
+    .sticky-info { font-size: 13px; color: #555; }
+    .sticky-info strong { color: #1a1a2e; font-size: 16px; font-weight: 800; }
+    .sticky-btn { background: #1a1a2e; color: #fff; border: none; border-radius: 10px; padding: 12px 20px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-next { width: calc(100% - 32px); margin: 0 16px 16px; padding: 15px; background: #1a1a2e; color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a href="dashboard.html" class="back">←</a>
+  <h1>해외 배포</h1>
+  <button class="cart-btn" id="cartBtn" style="display:none" onclick="goToPayment()">
+    주문하기 <span class="badge" id="badge">0</span>
+  </button>
+</div>
+
+<!-- Step indicator -->
+<div class="steps">
+  <div class="step active" id="step1el">
+    <div class="step-circle">1</div>
+    <div class="step-label">국가 선택</div>
+  </div>
+  <div class="step" id="step2el">
+    <div class="step-circle">2</div>
+    <div class="step-label">패키지 선택</div>
+  </div>
+  <div class="step" id="step3el">
+    <div class="step-circle">3</div>
+    <div class="step-label">결제</div>
+  </div>
+</div>
+
+<!-- Step 1: Country -->
+<div id="stepCountry">
+  <div class="section-title">배포할 국가를 선택하세요</div>
+  <div class="country-grid">
+    <div class="country-card" onclick="selectCountry('usa',this)">
+      <div class="country-flag">🇺🇸</div>
+      <div class="country-name">미국</div>
+      <div class="country-sub">USA</div>
+      <div class="country-count">AP통신 외 200+</div>
+    </div>
+    <div class="country-card" onclick="selectCountry('japan',this)">
+      <div class="country-flag">🇯🇵</div>
+      <div class="country-name">일본</div>
+      <div class="country-sub">Japan</div>
+      <div class="country-count">PR Times 외 150+</div>
+    </div>
+    <div class="country-card" onclick="selectCountry('china',this)">
+      <div class="country-flag">🇨🇳</div>
+      <div class="country-name">중국</div>
+      <div class="country-sub">China</div>
+      <div class="country-count">신화통신 외 80+</div>
+    </div>
+    <div class="country-card" onclick="selectCountry('sea',this)">
+      <div class="country-flag">🌏</div>
+      <div class="country-name">동남아</div>
+      <div class="country-sub">Southeast Asia</div>
+      <div class="country-count">5개국 120+</div>
+    </div>
+  </div>
+  <button class="btn-next hidden" id="btnStep1" onclick="goStep2()">다음 — 패키지 선택 →</button>
+</div>
+
+<!-- Step 2: Package -->
+<div id="stepPackage" class="hidden">
+  <div class="section-title" id="pkgTitle">미국 배포 패키지 선택</div>
+  <div class="package-list" id="pkgList"></div>
+  <div class="sticky-bar show" id="stickyBar">
+    <div class="sticky-inner">
+      <div class="sticky-info">
+        <span id="pkgSelectedName">패키지를 선택하세요</span><br>
+        <strong id="pkgPrice">₩0</strong>
+      </div>
+      <button class="sticky-btn" id="btnStep2" onclick="goToPayment()" disabled style="background:#ccc">제보하기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PACKAGES = {
+  usa: [
+    { id:'usa_basic', name:'미국 기본', price:350000, desc:'미국 주요 온라인 뉴스 배포', tags:['AP통신','PR Newswire','200+ 미디어'] },
+    { id:'usa_standard', name:'미국 스탠다드', price:550000, desc:'미국 + 캐나다 확장 배포', tags:['AP통신','로이터','Bloomberg','500+ 미디어'], badge:'인기' },
+    { id:'usa_premium', name:'미국 프리미엄', price:980000, desc:'TV·라디오 포함 전채널 배포', tags:['방송매체 포함','1,000+ 미디어','보고서 제공'] },
+  ],
+  japan: [
+    { id:'jp_basic', name:'일본 기본', price:280000, desc:'일본 주요 뉴스 사이트 배포', tags:['PR Times','Jiji Press','100+ 미디어'] },
+    { id:'jp_standard', name:'일본 스탠다드', price:450000, desc:'포털 + 업종별 전문지 배포', tags:['Yahoo Japan','포털 연동','300+ 미디어'], badge:'추천' },
+  ],
+  china: [
+    { id:'cn_basic', name:'중국 기본', price:380000, desc:'중국 주요 온라인 미디어 배포', tags:['신화통신','인민일보','80+ 미디어'] },
+    { id:'cn_standard', name:'중국 스탠다드', price:620000, desc:'SNS + 왕홍 네트워크 포함', tags:['웨이보','위챗','200+ 미디어'], badge:'인기' },
+  ],
+  sea: [
+    { id:'sea_basic', name:'동남아 기본', price:320000, desc:'싱가포르·말레이시아 중심 배포', tags:['Channel NewsAsia','Bernama','120+ 미디어'] },
+    { id:'sea_all', name:'동남아 전체', price:580000, desc:'5개국(싱·말·태·인도·베트남) 전체', tags:['5개국','300+ 미디어','번역 포함'], badge:'추천' },
+  ],
+};
+
+let selectedCountry = null;
+let selectedPkg = null;
+
+function selectCountry(code, el){
+  document.querySelectorAll('.country-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedCountry = code;
+  document.getElementById('btnStep1').classList.remove('hidden');
+}
+
+function goStep2(){
+  document.getElementById('stepCountry').classList.add('hidden');
+  document.getElementById('stepPackage').classList.remove('hidden');
+  document.getElementById('step1el').classList.remove('active');
+  document.getElementById('step1el').classList.add('done');
+  document.getElementById('step2el').classList.add('active');
+  document.getElementById('step1el').querySelector('.step-circle').textContent = '✓';
+  const names = {usa:'미국',japan:'일본',china:'중국',sea:'동남아'};
+  document.getElementById('pkgTitle').textContent = names[selectedCountry]+' 배포 패키지 선택';
+  renderPackages();
+}
+
+function renderPackages(){
+  const pkgs = PACKAGES[selectedCountry] || [];
+  document.getElementById('pkgList').innerHTML = pkgs.map(p=>`
+    <div class="package-card" id="pkg_${p.id}" onclick="selectPkg('${p.id}','${p.name}',${p.price})">
+      <div class="pkg-header">
+        <div>
+          <div class="pkg-name">${p.name} ${p.badge?`<span class="pkg-badge">${p.badge}</span>`:''}</div>
+          <div class="pkg-desc">${p.desc}</div>
+        </div>
+        <div>
+          <div class="pkg-price">₩${p.price.toLocaleString()}</div>
+          <div style="font-size:11px;color:#999;text-align:right">1회</div>
+        </div>
+      </div>
+      <div class="pkg-includes">${p.tags.map(t=>`<span class="pkg-tag">${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function selectPkg(id, name, price){
+  document.querySelectorAll('.package-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('pkg_'+id).classList.add('selected');
+  selectedPkg = {id, name, price};
+  document.getElementById('pkgSelectedName').textContent = name;
+  document.getElementById('pkgPrice').textContent = '₩'+price.toLocaleString();
+  const btn = document.getElementById('btnStep2');
+  btn.disabled = false;
+  btn.style.background = '#1a1a2e';
+}
+
+function goToPayment(){
+  if(!selectedPkg) return;
+  sessionStorage.setItem('orderType','overseas');
+  sessionStorage.setItem('orderItems', JSON.stringify([{
+    name: selectedPkg.name,
+    price: selectedPkg.price,
+    country: selectedCountry
+  }]));
+  window.location.href='manuscript.html';
+}
+</script>
+</body>
+</html>

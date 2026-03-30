@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>주문 완료 — Focusa</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: #0f172a; min-height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Noto Sans KR', sans-serif;
+      background: #f5f5f5;
+      max-width: 480px; margin: 0 auto;
+      min-height: 100vh; padding-bottom: 40px;
+    }
+
+    /* Hero */
+    .hero {
+      background: #fff;
+      padding: 44px 24px 32px;
+      text-align: center;
+    }
+    .hero-icon { font-size: 64px; animation: pop 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes pop { from { transform: scale(0); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .hero-title { font-size: 22px; font-weight: 800; color: #111; margin: 14px 0 8px; }
+    .hero-sub { font-size: 14px; color: #888; line-height: 1.65; }
+    .hero-sub strong { color: rgb(49, 130, 246); }
+
+    /* Card */
+    .card { background: #fff; border-radius: 14px; margin: 10px 16px 0; padding: 18px; }
+    .card-title { font-size: 12px; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-bottom: 1px solid #f8f8f8; }
+    .info-row:last-child { border-bottom: none; }
+    .info-lbl { font-size: 14px; color: #777; }
+    .info-val { font-size: 14px; font-weight: 600; color: #111; text-align: right; }
+    .info-val.amount { font-size: 20px; font-weight: 800; color: #e84040; }
+
+    /* Bank box */
+    .bank-box { background: #fffbe6; border: 1.5px solid #fcd34d; border-radius: 12px; padding: 16px; margin-top: 12px; }
+    .bank-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+    .bank-key { color: #92400e; }
+    .bank-val { font-weight: 600; color: #111; }
+    .bank-notice { font-size: 12px; color: #b45309; margin-top: 10px; padding-top: 10px; border-top: 1px solid #fde68a; line-height: 1.6; }
+
+    /* Timeline */
+    .timeline { padding: 4px 0; }
+    .tl { display: flex; gap: 12px; padding: 9px 0; }
+    .tl-left { display: flex; flex-direction: column; align-items: center; }
+    .tl-dot { width: 10px; height: 10px; border-radius: 50%; background: rgb(49, 130, 246); flex-shrink: 0; margin-top: 4px; }
+    .tl-dot.done  { background: #059669; }
+    .tl-dot.gray  { background: #e0e0e0; }
+    .tl-line { width: 2px; flex: 1; background: #f0f0f0; margin-top: 3px; min-height: 20px; }
+    .tl-body { flex: 1; }
+    .tl-title { font-size: 14px; font-weight: 600; color: #111; }
+    .tl-title.gray { color: #bbb; }
+    .tl-desc { font-size: 12px; color: #999; margin-top: 3px; line-height: 1.4; }
+
+    /* Buttons */
+    .btn-group { padding: 16px 16px 0; display: flex; flex-direction: column; gap: 10px; }
+    .btn-primary {
+      width: 100%; padding: 16px;
+      background: rgb(49, 130, 246); color: #fff;
+      border: none; border-radius: 12px;
+      font-size: 15px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-secondary {
+      width: 100%; padding: 15px;
+      background: #fff; color: #1a1a2e;
+      border: 1.5px solid #e8e8e8; border-radius: 12px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-ghost {
+      width: 100%; padding: 12px;
+      background: none; border: none;
+      font-size: 14px; color: #bbb;
+      cursor: pointer; font-family: inherit;
+    }
+
+    /* Confetti */
+    .confetti-wrap { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 100vh; pointer-events: none; z-index: 999; overflow: hidden; }
+    .cp { position: absolute; width: 8px; height: 8px; top: -10px; animation: fall linear forwards; }
+    @keyframes fall { 0% { transform: translateY(0) rotate(0deg); opacity:1; } 100% { transform: translateY(100vh) rotate(720deg); opacity:0; } }
+  </style>
+</head>
+<body>
+
+<div class="confetti-wrap" id="confetti"></div>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-icon">🎉</div>
+  <div class="hero-title">주문이 완료되었습니다!</div>
+  <div class="hero-sub">
+    <strong>입금 확인 후</strong> 원고 검토 및 배포가 진행됩니다.<br>
+    입금 확인 후 주문내역에서 원고를 확인하고 수정하세요.
+  </div>
+</div>
+
+<!-- Order info -->
+<div class="card">
+  <div class="card-title">주문 정보</div>
+  <div class="info-row"><span class="info-lbl">주문 번호</span><span class="info-val" id="orderId">—</span></div>
+  <div class="info-row"><span class="info-lbl">배포 유형</span><span class="info-val" id="orderType">—</span></div>
+  <div class="info-row"><span class="info-lbl">원고 방식</span><span class="info-val" id="msMode">—</span></div>
+  <div class="info-row"><span class="info-lbl">선택 매체</span><span class="info-val" id="mediaCount">—</span></div>
+  <div class="info-row"><span class="info-lbl">입금 금액</span><span class="info-val amount" id="totalAmount">₩0</span></div>
+</div>
+
+<!-- Bank info -->
+<div class="card">
+  <div class="card-title">입금 안내</div>
+  <div class="bank-box">
+    <div class="bank-row"><span class="bank-key">은행</span><span class="bank-val">신한은행</span></div>
+    <div class="bank-row"><span class="bank-key">계좌번호</span><span class="bank-val">100-000-123456</span></div>
+    <div class="bank-row"><span class="bank-key">예금주</span><span class="bank-val">(주)Focusa</span></div>
+    <div class="bank-row"><span class="bank-key">입금자명</span><span class="bank-val" id="depositor">—</span></div>
+    <div class="bank-row"><span class="bank-key">입금액</span><span class="bank-val" id="bankAmount">₩0</span></div>
+    <div class="bank-notice">⚠️ 입금자명을 위에 표시된 이름으로 입력해주세요.<br>3일 이내 미입금 시 주문이 자동 취소됩니다.</div>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div class="card">
+  <div class="card-title">진행 순서</div>
+  <div class="timeline">
+    <div class="tl">
+      <div class="tl-left"><div class="tl-dot done"></div><div class="tl-line"></div></div>
+      <div class="tl-body"><div class="tl-title">✅ 주문 완료 · 원고 제출</div><div class="tl-desc">원고 작성 및 주문이 완료되었습니다.</div></div>
+    </div>
+    <div class="tl">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-body"><div class="tl-title">입금 확인</div><div class="tl-desc">입금 확인 후 검토가 시작됩니다. (영업일 기준 1일)</div></div>
+    </div>
+    <div class="tl">
+      <div class="tl-left"><div class="tl-dot gray"></div><div class="tl-line"></div></div>
+      <div class="tl-body"><div class="tl-title gray">원고 확인 · 수정</div><div class="tl-desc">원고를 직접 수정하거나 수정 요청을 남겨주세요.</div></div>
+    </div>
+    <div class="tl">
+      <div class="tl-left"><div class="tl-dot gray"></div><div class="tl-line"></div></div>
+      <div class="tl-body"><div class="tl-title gray">원고 확정 → 배포 진행</div><div class="tl-desc">원고 확정 후 선택하신 언론사에 배포됩니다.</div></div>
+    </div>
+    <div class="tl">
+      <div class="tl-left"><div class="tl-dot gray"></div></div>
+      <div class="tl-body"><div class="tl-title gray">배포 완료 · 리포트</div><div class="tl-desc">배포 완료 후 결과 리포트를 확인하실 수 있습니다.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Buttons -->
+<div class="btn-group">
+  <button class="btn-primary" id="btnDeposit" onclick="requestDeposit()">
+    입금 확인 요청
+  </button>
+  <button class="btn-secondary" id="btnReview" onclick="goToReview()">
+    원고 확인 · 수정하기 →
+  </button>
+  <button class="btn-secondary" onclick="window.location.href='orders.html'">
+    주문내역 보기
+  </button>
+  <button class="btn-ghost" onclick="window.location.href='dashboard.html'">홈으로</button>
+</div>
+
+<script>
+const orders    = JSON.parse(localStorage.getItem('focusa_orders') || '[]');
+const order     = orders[0] || {};
+const ms        = order.manuscript || {};
+
+document.getElementById('orderId').textContent    = order.id    || '—';
+document.getElementById('orderType').textContent  = order.type === 'domestic' ? '국내 배포' : '해외 배포';
+document.getElementById('msMode').textContent     = ms.mode === 'ai' ? '✨ AI 원고 (생성 예정)' : '📝 직접 작성';
+document.getElementById('mediaCount').textContent = (order.mediaCount || 0) + '개 매체';
+document.getElementById('totalAmount').textContent = '₩' + (order.total || 0).toLocaleString();
+document.getElementById('bankAmount').textContent  = '₩' + (order.total || 0).toLocaleString();
+document.getElementById('depositor').textContent   = sessionStorage.getItem('lastDepositor') || '—';
+
+function requestDeposit() {
+  alert('입금 확인 요청이 전송되었습니다.\n확인 후 연락드립니다.');
+  // TODO: POST /api/orders/:id/confirm-request
+}
+
+function goToReview() {
+  const id = order.id || '';
+  window.location.href = 'manuscript-review.html?order=' + id;
+}
+
+// Confetti
+(function () {
+  const w = document.getElementById('confetti');
+  const c = ['#e84040','#1a1a2e','#7c3aed','#059669','#fcd34d','#fff'];
+  for (let i = 0; i < 55; i++) {
+    const el = document.createElement('div');
+    el.className = 'cp';
+    el.style.cssText = `left:${Math.random()*100}%;background:${c[Math.floor(Math.random()*c.length)]};border-radius:${Math.random()>.5?'50%':'2px'};animation-duration:${1.4+Math.random()*2}s;animation-delay:${Math.random()*.8}s`;
+    w.appendChild(el);
+  }
+  setTimeout(() => w.remove(), 4000);
+})();
+</script>
+</body>
+</html>

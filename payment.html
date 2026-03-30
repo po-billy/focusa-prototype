@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>주문 확인 — Focusa</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: #0f172a; min-height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Noto Sans KR', sans-serif;
+      background: #f5f5f5;
+      max-width: 480px; margin: 0 auto;
+      min-height: 100vh; padding-bottom: 100px;
+    }
+
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 20px;
+      background: #fff; border-bottom: 1px solid #f0f0f0;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .header .back { font-size: 22px; color: #222; cursor: pointer; text-decoration: none; }
+    .header h1 { font-size: 16px; font-weight: 700; color: #111; }
+    .header .space { width: 30px; }
+
+    /* Step indicator */
+    .step-header { padding: 16px 20px 0; background: #fff; margin-bottom: 12px; }
+    .step-label { font-size: 12px; color: #aaa; margin-bottom: 10px; }
+    .step-label strong { color: #111; font-weight: 700; }
+    .progress-track { height: 3px; background: #f0f0f0; border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; background: rgb(49, 130, 246); border-radius: 2px; width: 100%; }
+
+    /* Cards */
+    .card { background: #fff; border-radius: 14px; margin: 0 16px 10px; padding: 18px; }
+    .card-title {
+      font-size: 12px; font-weight: 700; color: #aaa;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-bottom: 14px;
+    }
+
+    /* Item list */
+    .item-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; border-bottom: 1px solid #f8f8f8;
+      font-size: 14px;
+    }
+    .item-row:last-child { border-bottom: none; }
+    .item-name { color: #333; }
+    .item-price { font-weight: 600; color: #111; }
+
+    /* Manuscript summary */
+    .ms-box {
+      background: #f8f4ff; border: 1px solid #e9d8fd;
+      border-radius: 10px; padding: 12px 14px; margin-top: 10px;
+    }
+    .ms-box-label { font-size: 11px; font-weight: 700; color: #7c3aed; margin-bottom: 6px; }
+    .ms-box-title { font-size: 14px; font-weight: 600; color: #111; margin-bottom: 4px; }
+    .ms-box-sub { font-size: 12px; color: #888; }
+
+    /* Price rows */
+    .price-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+    .price-row .lbl { color: #777; }
+    .price-row .val { color: #111; font-weight: 500; }
+    .price-row .discount { color: #059669; font-weight: 600; }
+    .total-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 0 0; margin-top: 6px;
+      border-top: 1.5px solid #111;
+    }
+    .total-row .lbl { font-size: 15px; font-weight: 700; color: #111; }
+    .total-row .val { font-size: 22px; font-weight: 800; color: #e84040; }
+
+    /* Inputs */
+    .field { margin-bottom: 14px; }
+    .field-label { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 7px; }
+    .field-label .req { color: #e84040; }
+    input[type=text] {
+      width: 100%; padding: 12px 14px;
+      border: 1.5px solid #e8e8e8; border-radius: 10px;
+      font-size: 14px; font-family: inherit;
+      outline: none; -webkit-appearance: none;
+      transition: border-color 0.15s;
+    }
+    input[type=text]:focus { border-color: rgb(49, 130, 246); }
+    input[type=text]::placeholder { color: #ccc; }
+
+    /* Payment method */
+    .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pay-card {
+      border: 1.5px solid #e8e8e8; border-radius: 12px;
+      padding: 16px 12px; cursor: pointer; text-align: center;
+      transition: all 0.15s;
+    }
+    .pay-card.selected { border-color: rgb(49, 130, 246); background: #eff6ff; }
+    .pay-icon { font-size: 26px; margin-bottom: 7px; }
+    .pay-name { font-size: 13px; font-weight: 600; color: #333; }
+    .pay-sub { font-size: 11px; color: #999; margin-top: 3px; }
+
+    /* Bank info */
+    .bank-box {
+      background: #fffbe6; border: 1px solid #fcd34d;
+      border-radius: 10px; padding: 14px; margin-top: 10px;
+      display: none;
+    }
+    .bank-box.show { display: block; }
+    .bank-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+    .bank-key { color: #92400e; }
+    .bank-val { font-weight: 600; color: #111; }
+    .bank-notice { font-size: 12px; color: #b45309; margin-top: 10px; padding-top: 10px; border-top: 1px solid #fde68a; line-height: 1.6; }
+
+    /* Consent */
+    .consent { display: flex; align-items: flex-start; gap: 10px; padding: 5px 0; cursor: pointer; }
+    .consent-box {
+      width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px;
+      border: 1.5px solid #ddd; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: transparent;
+      transition: all 0.15s;
+    }
+    .consent-box.on { background: rgb(49, 130, 246); border-color: rgb(49, 130, 246); color: #fff; }
+    .consent-text { font-size: 13px; color: #555; line-height: 1.55; }
+    .consent-link { color: #1a1a2e; text-decoration: underline; }
+
+    /* CTA */
+    .cta-bar {
+      position: fixed; bottom: 0;
+      left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      background: #fff; padding: 12px 20px 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .cta-btn {
+      width: 100%; padding: 16px;
+      background: rgb(49, 130, 246); color: #fff;
+      border: none; border-radius: 12px;
+      font-size: 16px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+      transition: background 0.15s;
+    }
+    .cta-btn:disabled { background: #e0e0e0; color: #bbb; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="back" onclick="history.back()">←</a>
+  <h1>주문 확인</h1>
+  <div class="space"></div>
+</div>
+
+<!-- Step 3/3 -->
+<div class="step-header">
+  <div class="step-label">단계 <strong>3</strong> / <strong>3</strong></div>
+  <div class="progress-track"><div class="progress-fill"></div></div>
+</div>
+
+<!-- Order items -->
+<div class="card">
+  <div class="card-title">주문 상세</div>
+  <div class="price-row">
+    <span class="lbl">배포 유형</span>
+    <span class="val" id="orderTypeLabel">—</span>
+  </div>
+  <div class="price-row">
+    <span class="lbl">선택 매체</span>
+    <span class="val" id="mediaCountLabel">—</span>
+  </div>
+  <div id="itemList" style="margin-top:8px"></div>
+
+  <!-- Manuscript summary -->
+  <div class="ms-box" id="msSummary" style="display:none">
+    <div class="ms-box-label" id="msLabel">📝 직접 작성</div>
+    <div class="ms-box-title" id="msTitle">—</div>
+    <div class="ms-box-sub" id="msSub">—</div>
+  </div>
+</div>
+
+<!-- Price -->
+<div class="card">
+  <div class="card-title">결제 금액</div>
+  <div class="price-row"><span class="lbl">상품 금액</span><span class="val" id="subtotalLabel">₩0</span></div>
+  <div class="price-row"><span class="lbl">할인</span><span class="val discount" id="discountLabel">- ₩0</span></div>
+  <div class="total-row">
+    <span class="lbl">최종 결제금액</span>
+    <span class="val" id="totalLabel">₩0</span>
+  </div>
+</div>
+
+<!-- Depositor -->
+<div class="card">
+  <div class="card-title">담당자 정보</div>
+  <div class="field">
+    <div class="field-label">성함 <span class="req">*</span></div>
+    <input type="text" id="name" placeholder="입금자명과 동일하게 입력하세요" />
+  </div>
+  <div class="field">
+    <div class="field-label">연락처 <span class="req">*</span></div>
+    <input type="text" id="phone" placeholder="010-0000-0000" />
+  </div>
+  <p style="font-size:12px;color:#bbb;margin-top:2px">담당자 연락처는 매체사에 전달되지 않습니다</p>
+</div>
+
+<!-- Payment method -->
+<div class="card">
+  <div class="card-title">결제 수단</div>
+  <div class="pay-grid">
+    <div class="pay-card selected" id="pay_bank" onclick="selectPay('bank')">
+      <div class="pay-icon">🏦</div>
+      <div class="pay-name">무통장입금</div>
+      <div class="pay-sub">계좌이체</div>
+    </div>
+    <div class="pay-card" id="pay_card" onclick="selectPay('card')">
+      <div class="pay-icon">💳</div>
+      <div class="pay-name">신용카드</div>
+      <div class="pay-sub">아임웹 결제</div>
+    </div>
+  </div>
+
+  <div class="bank-box show" id="bankBox">
+    <div class="bank-row"><span class="bank-key">은행</span><span class="bank-val">신한은행</span></div>
+    <div class="bank-row"><span class="bank-key">계좌번호</span><span class="bank-val">100-000-123456</span></div>
+    <div class="bank-row"><span class="bank-key">예금주</span><span class="bank-val">(주)Focusa</span></div>
+    <div class="bank-row"><span class="bank-key">입금액</span><span class="bank-val" id="bankAmountLabel">₩0</span></div>
+    <div class="bank-notice">⚠️ 입금자명을 성함란과 동일하게 입력해주세요.<br>3일 이내 미입금 시 주문이 자동 취소됩니다.</div>
+  </div>
+</div>
+
+<!-- Consent -->
+<div class="card">
+  <div class="consent" onclick="toggleConsent(1)">
+    <div class="consent-box on" id="c1">✓</div>
+    <div class="consent-text">주문 내용을 확인했으며 <a class="consent-link">이용약관</a> 및 <a class="consent-link">개인정보처리방침</a>에 동의합니다.</div>
+  </div>
+  <div style="height:10px"></div>
+  <div class="consent" onclick="toggleConsent(2)">
+    <div class="consent-box on" id="c2">✓</div>
+    <div class="consent-text">AI 원고 서비스 이용 시 생성된 콘텐츠의 책임은 이용자에게 있음을 확인했습니다.</div>
+  </div>
+</div>
+
+<div class="cta-bar">
+  <button class="cta-btn" onclick="submitOrder()">결제하기</button>
+</div>
+
+<script>
+const items      = JSON.parse(sessionStorage.getItem('orderItems') || '[]');
+const otype      = sessionStorage.getItem('orderType') || 'domestic';
+const ms         = JSON.parse(sessionStorage.getItem('manuscript') || '{}');
+const subtotal   = items.reduce((s, m) => s + m.price, 0);
+const total      = subtotal;
+
+// Fill labels
+document.getElementById('orderTypeLabel').textContent  = otype === 'domestic' ? '국내 배포' : '해외 배포';
+document.getElementById('mediaCountLabel').textContent = items.length + '개 매체';
+document.getElementById('subtotalLabel').textContent   = '₩' + subtotal.toLocaleString();
+document.getElementById('discountLabel').textContent   = '- ₩0';
+document.getElementById('totalLabel').textContent      = '₩' + total.toLocaleString();
+document.getElementById('bankAmountLabel').textContent = '₩' + total.toLocaleString();
+
+// Item list
+document.getElementById('itemList').innerHTML = items.map(m => `
+  <div class="item-row">
+    <span class="item-name">${m.name}</span>
+    <span class="item-price">₩${m.price.toLocaleString()}</span>
+  </div>`).join('');
+
+// Manuscript summary
+if (ms.mode) {
+  document.getElementById('msSummary').style.display = 'block';
+  if (ms.mode === 'direct') {
+    document.getElementById('msLabel').textContent = '📝 직접 작성';
+    document.getElementById('msTitle').textContent = ms.title || '—';
+    document.getElementById('msSub').textContent   = ms.body ? ms.body.slice(0, 60) + '...' : '';
+  } else {
+    document.getElementById('msLabel').textContent = '✨ AI 원고 작성';
+    document.getElementById('msTitle').textContent = ms.brand + ' · ' + ms.topic;
+    document.getElementById('msSub').textContent   = '결제 확인 후 AI 원고가 생성됩니다';
+  }
+}
+
+// Payment method toggle
+let payMethod = 'bank';
+function selectPay(m) {
+  payMethod = m;
+  ['bank','card'].forEach(k => document.getElementById('pay_'+k).classList.toggle('selected', k === m));
+  document.getElementById('bankBox').classList.toggle('show', m === 'bank');
+}
+
+// Consent
+const consents = { 1: true, 2: true };
+function toggleConsent(n) {
+  consents[n] = !consents[n];
+  const el = document.getElementById('c' + n);
+  el.classList.toggle('on', consents[n]);
+  el.textContent = consents[n] ? '✓' : '';
+}
+
+// Submit
+function submitOrder() {
+  const name  = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  if (!name)  { alert('성함을 입력해주세요.'); return; }
+  if (!phone) { alert('연락처를 입력해주세요.'); return; }
+  if (!consents[1] || !consents[2]) { alert('약관에 동의해주세요.'); return; }
+  if (items.length === 0) { alert('선택된 매체가 없습니다.'); return; }
+
+  // Save order
+  const orderId = 'ORD-' + Date.now();
+  const orders  = JSON.parse(localStorage.getItem('focusa_orders') || '[]');
+  const today   = new Date().toLocaleDateString('ko-KR');
+
+  orders.unshift({
+    id: orderId,
+    type: otype,
+    mediaCount: items.length,
+    items,
+    total,
+    date: today,
+    status: 'waiting',
+    manuscript: ms,
+    depositor: name,
+    phone,
+    payMethod,
+  });
+  localStorage.setItem('focusa_orders', JSON.stringify(orders));
+
+  sessionStorage.setItem('lastOrderId',    orderId);
+  sessionStorage.setItem('lastOrderTotal', total);
+  sessionStorage.setItem('lastDepositor',  name);
+
+  if (payMethod === 'card') {
+    // TODO: 아임웹 결제 모듈 호출 포인트
+    alert('아임웹 결제 모듈 연동 포인트\n(카드 결제)');
+  }
+
+  window.location.href = 'complete.html';
+}
+</script>
+</body>
+</html>

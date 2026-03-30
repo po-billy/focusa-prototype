@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>뉴스247</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: #0f172a; min-height: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; background: #fff; max-width: 480px; margin: 0 auto; min-height: 100vh; padding-bottom: 80px; }
+
+    /* ── Header ── */
+    .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px 12px; }
+    .logo { font-size: 22px; font-weight: 900; color: #1a1a2e; letter-spacing: -0.5px; }
+    .login-btn { font-size: 14px; font-weight: 600; color: #e84040; background: none; border: none; cursor: pointer; }
+
+    /* ── Ticker ── */
+    .ticker { display: flex; align-items: center; background: #fff; padding: 7px 16px; border-bottom: 1px solid #f0f0f0; overflow: hidden; gap: 10px; }
+    .ticker-badge { display: flex; align-items: center; gap: 5px; border-radius: 4px; padding: 3px 8px; font-size: 11px; font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+    .ticker-badge.breaking { background: #e84040; color: #fff; }
+    .ticker-badge.live { background: #e84040; color: #fff; }
+    .ticker-dot { width: 6px; height: 6px; background: #fff; border-radius: 50%; animation: blink 1s infinite; }
+    .ticker-scroll { flex: 1; overflow: hidden; }
+    .ticker-inner { display: flex; white-space: nowrap; animation: marquee 28s linear infinite; }
+    .ticker-text { font-size: 13px; color: #333; padding-right: 40px; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+    /* ── Segment tabs ── */
+    .seg-wrap { padding: 10px 16px 0; }
+    .seg { display: flex; background: #f4f4f4; border-radius: 10px; padding: 3px; }
+    .seg-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 0; border-radius: 8px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 600; color: #999; transition: all 0.2s; }
+    .seg-btn.active { background: rgb(49, 130, 246); color: #fff; box-shadow: 0 2px 8px rgba(49,130,246,0.25); }
+    .seg-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    /* ── Tab content ── */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ── Search ── */
+    .search-box { padding: 12px 16px 10px; }
+    .search-wrap { position: relative; }
+    .search-wrap .s-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #bbb; pointer-events: none; }
+    .search-wrap input { width: 100%; padding: 11px 14px 11px 40px; border: 1.5px solid #ebebeb; border-radius: 10px; font-size: 14px; background: #f8f8f8; outline: none; color: #333; }
+    .search-wrap input::placeholder { color: #c0c0c0; }
+    .search-wrap input:focus { border-color: rgb(49, 130, 246); background: #fff; }
+
+    /* ── Category icons (domestic) ── */
+    .cat-scroll { display: flex; gap: 10px; padding: 4px 16px 14px; overflow-x: auto; scrollbar-width: none; }
+    .cat-scroll::-webkit-scrollbar { display: none; }
+    .cat-item { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; flex-shrink: 0; }
+    .cat-icon { width: 54px; height: 54px; border-radius: 14px; background: #f4f4f4; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+    .cat-icon svg { width: 26px; height: 26px; color: #c0c0c0; transition: color 0.15s; }
+    .cat-item.active .cat-icon { background: #eff6ff; }
+    .cat-item.active .cat-icon svg { color: rgb(49, 130, 246); }
+    .cat-label { font-size: 11px; color: #aaa; font-weight: 500; text-align: center; line-height: 1.3; max-width: 54px; }
+    .cat-item.active .cat-label { color: rgb(49, 130, 246); font-weight: 700; }
+
+    /* ── Count row ── */
+    .count-row { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 10px; }
+    .count-text { font-size: 13px; color: #888; }
+    .count-text b { color: #1a1a2e; font-weight: 700; }
+    .sort-select { font-size: 12px; color: #555; border: 1.5px solid #e0e0e0; border-radius: 6px; padding: 5px 8px; background: #fff; outline: none; cursor: pointer; }
+
+    /* ── Media list (domestic) ── */
+    .media-list { padding: 0 16px; }
+    .media-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid #f3f3f3; cursor: pointer; }
+    .media-item:last-child { border-bottom: none; }
+    .media-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .media-radio { width: 22px; height: 22px; border: 2px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+    .media-radio.checked { border-color: rgb(49, 130, 246); background: #eff6ff; }
+    .media-radio.checked::after { content: ''; width: 9px; height: 9px; background: rgb(49, 130, 246); border-radius: 50%; display: block; }
+    .media-info { min-width: 0; }
+    .name-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .media-name { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+    .rec-badge { font-size: 10px; background: #e84040; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 700; flex-shrink: 0; }
+    .media-tags { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+    .tag { font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+    .tag.naver { background: #e8f5e9; color: #2e7d32; }
+    .tag.daum  { background: #e3f2fd; color: #1565c0; }
+    .media-right { text-align: right; flex-shrink: 0; padding-left: 10px; }
+    .media-price { font-size: 15px; font-weight: 700; color: #e84040; }
+    .media-unit { font-size: 11px; color: #ccc; margin-top: 2px; }
+
+    /* ── Country tabs (overseas) ── */
+    .country-tabs { display: flex; gap: 12px; padding: 4px 16px 14px; overflow-x: auto; scrollbar-width: none; }
+    .country-tabs::-webkit-scrollbar { display: none; }
+    .country-tab { display: flex; flex-direction: column; align-items: center; gap: 7px; cursor: pointer; flex-shrink: 0; }
+    .flag-box { width: 54px; height: 54px; border-radius: 14px; border: 2px solid #e8e8e8; display: flex; align-items: center; justify-content: center; font-size: 30px; transition: all 0.15s; background: #fff; }
+    .country-tab.active .flag-box { border-color: rgb(49, 130, 246); background: #eff6ff; }
+    .flag-label { font-size: 11px; color: #aaa; font-weight: 500; }
+    .country-tab.active .flag-label { color: rgb(49, 130, 246); font-weight: 700; }
+
+    /* ── Package count ── */
+    .pkg-count { font-size: 13px; color: #888; padding: 0 16px 12px; }
+    .pkg-count b { color: #1a1a2e; }
+
+    /* ── Package cards (overseas) ── */
+    .package-list { padding: 0 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+    .package-card { border: 1.5px solid #e8e8e8; border-radius: 16px; overflow: hidden; position: relative; cursor: pointer; transition: border-color 0.15s; }
+    .package-card:hover { border-color: #aaa; }
+    .pkg-badge-abs { position: absolute; top: 14px; right: 14px; background: #f97316; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; z-index: 1; }
+    .pkg-body { padding: 16px 16px 12px; }
+    .pkg-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .pkg-left { display: flex; flex-direction: column; gap: 4px; }
+    .pkg-tier { display: flex; align-items: center; gap: 6px; }
+    .pkg-dot { width: 8px; height: 8px; background: rgb(49, 130, 246); border-radius: 50%; flex-shrink: 0; }
+    .pkg-tier-name { font-size: 16px; font-weight: 800; color: #1a1a2e; }
+    .pkg-subtitle { font-size: 13px; font-weight: 600; color: rgb(49, 130, 246); }
+    .pkg-right { text-align: right; padding-right: 2px; }
+    .pkg-price { font-size: 21px; font-weight: 800; color: #e84040; line-height: 1; }
+    .pkg-price-note { font-size: 11px; color: #aaa; margin-top: 4px; line-height: 1.4; }
+    .pkg-features { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 8px; margin-bottom: 12px; }
+    .pkg-feature { display: flex; align-items: flex-start; gap: 5px; font-size: 12px; color: #444; line-height: 1.3; }
+    .pkg-feature svg { width: 13px; height: 13px; color: rgb(49, 130, 246); flex-shrink: 0; margin-top: 1px; }
+    .pkg-media-box { background: #f5f7ff; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+    .pkg-media-label { font-size: 11px; color: #888; font-weight: 600; margin-bottom: 8px; letter-spacing: 0.3px; }
+    .pkg-media-logos { display: flex; gap: 6px; flex-wrap: wrap; }
+    .media-chip { display: flex; align-items: center; gap: 4px; background: #fff; border: 1px solid #dce8ff; border-radius: 6px; padding: 4px 9px; font-size: 12px; font-weight: 600; color: #1a1a2e; }
+    .media-chip svg { width: 12px; height: 12px; color: rgb(49, 130, 246); }
+    .pkg-media-more { font-size: 11px; color: #999; margin-top: 7px; }
+    .pkg-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 10px 14px; background: #fffbf0; }
+    .pkg-tip { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+    .pkg-tip svg { width: 16px; height: 16px; color: #f59e0b; flex-shrink: 0; }
+    .pkg-tip-text { font-size: 12px; color: #92400e; }
+    .pkg-select-btn { background: rgb(49, 130, 246); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; margin-left: 10px; flex-shrink: 0; transition: background 0.15s; }
+    .pkg-select-btn:hover { background: rgb(30, 100, 210); }
+
+    /* ── Domestic sticky bar ── */
+    .sticky-bar { position: fixed; bottom: 68px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); max-width: 448px; background: #1a1a2e; border-radius: 14px; padding: 12px 16px; display: none; z-index: 30; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
+    .sticky-bar.show { display: flex; justify-content: space-between; align-items: center; }
+    .sticky-info .sticky-count { font-size: 12px; color: rgba(255,255,255,0.7); }
+    .sticky-info .sticky-price { font-size: 18px; font-weight: 800; color: #fff; }
+    .sticky-btn { background: rgb(49, 130, 246); color: #fff; border: none; border-radius: 9px; padding: 11px 20px; font-size: 14px; font-weight: 700; cursor: pointer; }
+
+    /* ── Package confirm modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 60; }
+    .modal-overlay.show { display: flex; align-items: flex-end; justify-content: center; }
+    .modal-sheet { background: #fff; border-radius: 20px 20px 0 0; padding: 24px 20px 32px; width: 100%; max-width: 480px; }
+    .modal-handle { width: 40px; height: 4px; background: #e0e0e0; border-radius: 2px; margin: 0 auto 18px; }
+    .modal-title { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 6px; }
+    .modal-sub { font-size: 13px; color: #888; margin-bottom: 20px; line-height: 1.5; }
+    .modal-pkg-info { background: #f5f7ff; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; }
+    .modal-pkg-name { font-size: 16px; font-weight: 800; color: #1a1a2e; }
+    .modal-pkg-price { font-size: 20px; font-weight: 800; color: #e84040; margin-top: 4px; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-cancel { flex: 1; padding: 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; background: #fff; font-size: 15px; font-weight: 600; color: #666; cursor: pointer; }
+    .modal-confirm { flex: 2; padding: 14px; border: none; border-radius: 10px; background: rgb(49, 130, 246); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+
+    /* ── Bottom nav ── */
+    .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: #fff; border-top: 1px solid #eeeeee; display: flex; z-index: 50; }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 10px 0 8px; cursor: pointer; text-decoration: none; color: #c0c0c0; transition: color 0.15s; }
+    .nav-item.active { color: #1a1a2e; }
+    .nav-item svg { width: 22px; height: 22px; }
+    .nav-label { font-size: 10px; margin-top: 3px; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">FocusA</div>
+  <button class="login-btn">로그인</button>
+</div>
+
+<!-- Ticker -->
+<div class="ticker" id="ticker">
+  <div class="ticker-badge breaking" id="tickerBadge">
+    <div class="ticker-dot"></div>
+    <span id="tickerBadgeText">속보</span>
+  </div>
+  <div class="ticker-scroll">
+    <div class="ticker-inner" id="tickerInner">
+      <span class="ticker-text" id="tickerA"></span>
+      <span class="ticker-text" id="tickerB"></span>
+    </div>
+  </div>
+</div>
+
+<!-- Segment -->
+<div class="seg-wrap">
+  <div class="seg">
+    <button class="seg-btn active" id="btnDomestic" onclick="switchTab('domestic')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0z"/>
+        <line x1="10" y1="8" x2="18" y2="8"/>
+        <line x1="10" y1="12" x2="18" y2="12"/>
+        <line x1="10" y1="16" x2="13" y2="16"/>
+      </svg>
+      국내 배포
+    </button>
+    <button class="seg-btn" id="btnOverseas" onclick="switchTab('overseas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+      해외 배포
+    </button>
+  </div>
+</div>
+
+<!-- ============ 국내 배포 탭 ============ -->
+<div class="tab-content active" id="tab-domestic">
+  <div class="search-box">
+    <div class="search-wrap">
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" placeholder="매체명 검색" oninput="searchDom(this.value)" />
+    </div>
+  </div>
+
+  <!-- Category icons -->
+  <div class="cat-scroll">
+    <div class="cat-item active" onclick="filterCat('all',this)" data-cat="all">
+      <div class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="8" height="8" rx="1"/>
+          <rect x="13" y="3" width="8" height="8" rx="1"/>
+          <rect x="13" y="13" width="8" height="8" rx="1"/>
+          <rect x="3" y="13" width="8" height="8" rx="1"/>
+        </svg>
+      </div>
+      <span class="cat-label">전체</span>
+    </div>
+    <div class="cat-item" onclick="filterCat('general',this)" data-cat="general">
+      <div class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="3" y1="9" x2="21" y2="9"/>
+          <line x1="3" y1="15" x2="10" y2="15"/>
+          <line x1="8" y1="9" x2="8" y2="3"/>
+        </svg>
+      </div>
+      <span class="cat-label">일반</span>
+    </div>
+    <div class="cat-item" onclick="filterCat('beauty',this)" data-cat="beauty">
+      <div class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
+      </div>
+      <span class="cat-label">뷰티</span>
+    </div>
+    <div class="cat-item" onclick="filterCat('medical',this)" data-cat="medical">
+      <div class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <span class="cat-label">의료</span>
+    </div>
+    <div class="cat-item" onclick="filterCat('health',this)" data-cat="health">
+      <div class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+          <path d="M9.1 9a3 3 0 0 1 5.82 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <span class="cat-label">건식</span>
+    </div>
+    <div class="cat-item" onclick="filterCat('video',this)" data-cat="video">
+      <div class="cat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="23 7 16 12 23 17 23 7"/>
+          <rect x="1" y="5" width="15" height="14" rx="2"/>
+        </svg>
+      </div>
+      <span class="cat-label" style="max-width:58px;word-break:keep-all">동영상 첨부 기사</span>
+    </div>
+  </div>
+
+  <!-- Count + sort -->
+  <div class="count-row">
+    <div class="count-text">전체 · 매체 <b id="domCount">163</b>개</div>
+    <select class="sort-select" onchange="sortDom(this.value)">
+      <option value="default">기본</option>
+      <option value="price_asc">가격 낮은순</option>
+      <option value="price_desc">가격 높은순</option>
+      <option value="name">이름순</option>
+    </select>
+  </div>
+
+  <div class="media-list" id="domMediaList"></div>
+</div>
+
+<!-- ============ 해외 배포 탭 ============ -->
+<div class="tab-content" id="tab-overseas">
+  <div class="search-box">
+    <div class="search-wrap">
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" placeholder="패키지 검색" oninput="searchPkg(this.value)" />
+    </div>
+  </div>
+
+  <!-- Country tabs -->
+  <div class="country-tabs">
+    <div class="country-tab active" onclick="selectCountry('usa',this)">
+      <div class="flag-box">🇺🇸</div>
+      <div class="flag-label">북미</div>
+    </div>
+    <div class="country-tab" onclick="selectCountry('japan',this)">
+      <div class="flag-box">🇯🇵</div>
+      <div class="flag-label">일본</div>
+    </div>
+    <div class="country-tab" onclick="selectCountry('china',this)">
+      <div class="flag-box">🇨🇳</div>
+      <div class="flag-label">중국</div>
+    </div>
+    <div class="country-tab" onclick="selectCountry('sea',this)">
+      <div class="flag-box">🌏</div>
+      <div class="flag-label">동남아</div>
+    </div>
+  </div>
+
+  <div class="pkg-count">패키지 <b id="pkgCount">3</b>개</div>
+  <div class="package-list" id="pkgList"></div>
+</div>
+
+<!-- Domestic sticky order bar -->
+<div class="sticky-bar" id="stickyBar">
+  <div class="sticky-info">
+    <div class="sticky-count" id="stickyCount">0개 선택</div>
+    <div class="sticky-price" id="stickyPrice">₩0</div>
+  </div>
+  <button class="sticky-btn" onclick="goDomesticOrder()">주문하기 →</button>
+</div>
+
+<!-- Overseas confirm modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalTitle">패키지 확인</div>
+    <div class="modal-sub" id="modalSub">선택하신 패키지로 기사를 송출하시겠습니까?</div>
+    <div class="modal-pkg-info">
+      <div class="modal-pkg-name" id="modalPkgName">—</div>
+      <div class="modal-pkg-price" id="modalPkgPrice">—</div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">돌아가기</button>
+      <button class="modal-confirm" onclick="goOverseasOrder()">제보하기 →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <a class="nav-item active" href="dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9,22 9,12 15,12 15,22"/>
+    </svg>
+    <div class="nav-label">홈</div>
+  </a>
+  <a class="nav-item" href="orders.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14,2 14,8 20,8"/>
+      <line x1="9" y1="13" x2="15" y2="13"/>
+      <line x1="9" y1="17" x2="13" y2="17"/>
+    </svg>
+    <div class="nav-label">주문내역</div>
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    <div class="nav-label">문의</div>
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="18" y1="20" x2="18" y2="10"/>
+      <line x1="12" y1="20" x2="12" y2="4"/>
+      <line x1="6" y1="20" x2="6" y2="14"/>
+    </svg>
+    <div class="nav-label">리포트</div>
+  </a>
+  <a class="nav-item" href="#">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3"/>
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+    </svg>
+    <div class="nav-label">설정</div>
+  </a>
+</nav>
+
+<script>
+/* ==================== TICKER ==================== */
+const TICKER_DOM = '국무총리, 강기정 꺾고 민주당 대표 당선 · chosun.com  ●  [속보] 김병환 금융위원장 "미국 관세 시장 충격 최소화"  ●  한은, 기준금리 0.25%p 인하 · 연 2.75%로 조정  ●  삼성전자 1분기 영업이익 4.7조원 잠정 발표  ●  ';
+const TICKER_OVS = 'Oil Tanker Seized in Red Sea by Houthi Forces · New York Times  ●  A Toothless Iran? New Sanctions Target Nuclear Program  ●  US Fed Holds Rates Steady Amid Trade War Uncertainty · Reuters  ●  Tech Giants Rally on AI Chip Demand · Bloomberg  ●  ';
+
+function setTicker(type) {
+  const text = type === 'domestic' ? TICKER_DOM : TICKER_OVS;
+  document.getElementById('tickerBadgeText').textContent = type === 'domestic' ? '속보' : 'LIVE';
+  const full = text + text;
+  document.getElementById('tickerA').textContent = text;
+  document.getElementById('tickerB').textContent = text;
+}
+
+/* ==================== TAB ==================== */
+function switchTab(tab) {
+  ['domestic','overseas'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('btn' + (t === 'domestic' ? 'Domestic' : 'Overseas')).classList.toggle('active', t === tab);
+  });
+  setTicker(tab);
+  if (tab !== 'domestic') document.getElementById('stickyBar').classList.remove('show');
+  else updateDomUI();
+}
+
+/* ==================== DOMESTIC ==================== */
+const DOM_MEDIA = [
+  { id:1,  name:'공감신문',    tags:['naver','daum'], price:68000,  cat:'general', rec:true  },
+  { id:2,  name:'동아일보',    tags:['naver','daum'], price:400000, cat:'general', rec:true  },
+  { id:3,  name:'직셀',        tags:['naver','daum'], price:68000,  cat:'general', rec:false },
+  { id:4,  name:'울산제일보',  tags:['naver'],        price:68000,  cat:'general', rec:false },
+  { id:5,  name:'뉴스와이어',  tags:['naver','daum'], price:89000,  cat:'general', rec:false },
+  { id:6,  name:'뉴스웨이',    tags:['naver','daum'], price:130000, cat:'general', rec:false },
+  { id:7,  name:'라이브뉴스',  tags:['naver'],        price:130000, cat:'general', rec:false },
+  { id:8,  name:'팜뉴스',      tags:['naver','daum'], price:140000, cat:'health',  rec:false },
+  { id:9,  name:'바이오타임즈',tags:['naver'],        price:140000, cat:'medical', rec:false },
+  { id:10, name:'헬스조선',    tags:['naver','daum'], price:150000, cat:'health',  rec:true  },
+  { id:11, name:'코스인코리아',tags:['naver'],        price:90000,  cat:'beauty',  rec:false },
+  { id:12, name:'더피알',      tags:['naver','daum'], price:75000,  cat:'general', rec:false },
+  { id:13, name:'이코노미뷰',  tags:['naver','daum'], price:95000,  cat:'general', rec:false },
+  { id:14, name:'테크월드',    tags:['naver','daum'], price:110000, cat:'general', rec:false },
+  { id:15, name:'골프타임즈',  tags:['daum'],         price:130000, cat:'general', rec:false },
+];
+
+let domSelected = {}, domCat = 'all', domSearch = '', domSort = 'default';
+
+const fmt = n => '₩' + n.toLocaleString();
+
+function getFilteredDom() {
+  let data = DOM_MEDIA.filter(m => {
+    const catOk = domCat === 'all' || m.cat === domCat;
+    const srchOk = m.name.includes(domSearch);
+    return catOk && srchOk;
+  });
+  if (domSort === 'price_asc')  data.sort((a,b) => a.price - b.price);
+  if (domSort === 'price_desc') data.sort((a,b) => b.price - a.price);
+  if (domSort === 'name')       data.sort((a,b) => a.name.localeCompare(b.name, 'ko'));
+  return data;
+}
+
+function renderDom() {
+  const data = getFilteredDom();
+  document.getElementById('domCount').textContent = data.length;
+  document.getElementById('domMediaList').innerHTML = data.map(m => `
+    <div class="media-item" onclick="toggleDom(${m.id})">
+      <div class="media-left">
+        <div class="media-radio ${domSelected[m.id] ? 'checked' : ''}"></div>
+        <div class="media-info">
+          <div class="name-row">
+            <span class="media-name">${m.name}</span>
+            ${m.rec ? '<span class="rec-badge">추천</span>' : ''}
+          </div>
+          <div class="media-tags">
+            ${m.tags.map(t => `<span class="tag ${t}">${t === 'naver' ? '네이버' : '다음'}</span>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div class="media-right">
+        <div class="media-price">${fmt(m.price)}</div>
+        <div class="media-unit">1회</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleDom(id) {
+  if (domSelected[id]) delete domSelected[id];
+  else { const m = DOM_MEDIA.find(x => x.id === id); domSelected[id] = m; }
+  updateDomUI();
+  renderDom();
+}
+
+function updateDomUI() {
+  const items = Object.values(domSelected);
+  const total = items.reduce((s, m) => s + m.price, 0);
+  const count = items.length;
+  document.getElementById('stickyCount').textContent = count + '개 선택';
+  document.getElementById('stickyPrice').textContent = fmt(total);
+  document.getElementById('stickyBar').classList.toggle('show', count > 0);
+}
+
+function filterCat(cat, el) {
+  domCat = cat;
+  document.querySelectorAll('.cat-item').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderDom();
+}
+
+function searchDom(q) { domSearch = q; renderDom(); }
+function sortDom(v)   { domSort = v;  renderDom(); }
+
+function goDomesticOrder() {
+  sessionStorage.setItem('orderType', 'domestic');
+  sessionStorage.setItem('orderItems', JSON.stringify(Object.values(domSelected)));
+  window.location.href = 'manuscript.html';
+}
+
+/* ==================== OVERSEAS ==================== */
+const PACKAGES = {
+  usa: [
+    {
+      id:'usa_standard', tier:'STANDARD', badge:null,
+      subtitle:'SEO 최적화 패키지', price:'$350',
+      note:'부가세 별도\n100개+ 매체',
+      features:['구글 뉴스/빙 즉각 색인','브랜드 디지털 발자국 생성','기초 신뢰도 확보','AI 검색엔진 최적화(GEO)'],
+      medias:['Digital Journal','Barchart','News Channel Nebraska'],
+      more:'+ Market Minute, Howrah NEWS, GORAKHPUR Reporter 외 100개+',
+      tip:'신규 브랜드 런칭, 검색 노출 시작',
+    },
+    {
+      id:'usa_best', tier:'BEST', badge:'BEST',
+      subtitle:'프리미엄 배포 패키지', price:'$750',
+      note:'부가세 별도\n500개+ 매체',
+      features:['AP통신 배포 포함','로이터·Bloomberg 연동','실시간 배포 트래킹','상세 보고서 제공'],
+      medias:['AP News','Reuters','Bloomberg'],
+      more:'+ Business Wire, PR Newswire 외 500개+',
+      tip:'글로벌 브랜드 인지도 극대화',
+    },
+    {
+      id:'usa_premium', tier:'PREMIUM', badge:null,
+      subtitle:'브랜드 론칭 패키지', price:'$2,450',
+      note:'부가세 별도\n1,000개+ 매체',
+      features:['Yahoo Finance 포함','Business Insider 연동','TV·라디오 방송 포함','전담 매니저 배정'],
+      medias:['Yahoo Finance','Business Insider','CBS News'],
+      more:'+ 방송 미디어 포함 1,000개+',
+      tip:'최대 노출, 기업 PR 캠페인에 최적',
+    },
+  ],
+  japan: [
+    {
+      id:'jp_standard', tier:'STANDARD', badge:null,
+      subtitle:'일본 기본 배포', price:'¥28,000',
+      note:'부가세 별도\n100개+ 매체',
+      features:['PR Times 연동','Jiji Press 배포','야후 재팬 노출','일본어 번역 포함'],
+      medias:['PR Times','Jiji Press','Mynavi'],
+      more:'+ Livedoor, Excite 외 100개+',
+      tip:'일본 시장 첫 진출에 최적',
+    },
+    {
+      id:'jp_best', tier:'BEST', badge:'BEST',
+      subtitle:'포털 연동 스탠다드', price:'¥45,000',
+      note:'부가세 별도\n300개+ 매체',
+      features:['Yahoo Japan 포털 연동','업종별 전문지 배포','포털 SEO 최적화','상세 보고서 제공'],
+      medias:['Yahoo Japan','Nikkei','Mainichi'],
+      more:'+ Yomiuri, Sankei 외 300개+',
+      tip:'일본 소비자 직접 노출 극대화',
+    },
+  ],
+  china: [
+    {
+      id:'cn_standard', tier:'STANDARD', badge:null,
+      subtitle:'중국 기본 배포', price:'¥2,800',
+      note:'부가세 별도\n80개+ 매체',
+      features:['신화통신 배포','인민일보 연동','바이두 SEO 최적화','중국어 번역 포함'],
+      medias:['신화통신','인민일보','환구시보'],
+      more:'+ CGTN, 봉황망 외 80개+',
+      tip:'중국 주요 미디어 직접 배포',
+    },
+    {
+      id:'cn_best', tier:'BEST', badge:'BEST',
+      subtitle:'SNS + 왕홍 패키지', price:'¥6,200',
+      note:'부가세 별도\n200개+ 매체',
+      features:['웨이보 공식 배포','위챗 미디어 연동','왕홍 네트워크','실시간 모니터링'],
+      medias:['Weibo','WeChat','더우인'],
+      more:'+ 바이두, 소후 외 200개+',
+      tip:'중국 SNS 바이럴 마케팅에 최적',
+    },
+  ],
+  sea: [
+    {
+      id:'sea_standard', tier:'STANDARD', badge:null,
+      subtitle:'동남아 기본 배포', price:'$320',
+      note:'부가세 별도\n120개+ 매체',
+      features:['싱가포르·말레이시아 중심','Channel NewsAsia 배포','영어 배포 포함','Bernama 연동'],
+      medias:['Channel NewsAsia','Bernama','The Star'],
+      more:'+ Straits Times, NST 외 120개+',
+      tip:'동남아 주요 2개국 집중 배포',
+    },
+    {
+      id:'sea_best', tier:'BEST', badge:'BEST',
+      subtitle:'5개국 전체 패키지', price:'$580',
+      note:'부가세 별도\n300개+ 매체',
+      features:['5개국 전체 배포','번역 포함(5개국어)','현지 미디어 연동','통합 보고서 제공'],
+      medias:['The Nation','VnExpress','Jakarta Post'],
+      more:'+ 5개국 주요 미디어 300개+',
+      tip:'동남아 전체 시장 동시 공략',
+    },
+  ],
+};
+
+let currentCountry = 'usa', pkgSearch = '', pendingPkg = null;
+
+function renderPackages() {
+  const pkgs = (PACKAGES[currentCountry] || []).filter(p =>
+    !pkgSearch || p.tier.toLowerCase().includes(pkgSearch.toLowerCase()) || p.subtitle.includes(pkgSearch)
+  );
+  document.getElementById('pkgCount').textContent = pkgs.length;
+  document.getElementById('pkgList').innerHTML = pkgs.map(p => `
+    <div class="package-card" id="pkg_${p.id}">
+      ${p.badge ? `<div class="pkg-badge-abs">${p.badge}</div>` : ''}
+      <div class="pkg-body">
+        <div class="pkg-header">
+          <div class="pkg-left">
+            <div class="pkg-tier">
+              <div class="pkg-dot"></div>
+              <div class="pkg-tier-name">${p.tier}</div>
+            </div>
+            <div class="pkg-subtitle">${p.subtitle}</div>
+          </div>
+          <div class="pkg-right" style="${p.badge ? 'padding-right:64px' : ''}">
+            <div class="pkg-price">${p.price}</div>
+            <div class="pkg-price-note">${p.note.replace('\n','<br>')}</div>
+          </div>
+        </div>
+        <div class="pkg-features">
+          ${p.features.map(f => `
+            <div class="pkg-feature">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              ${f}
+            </div>
+          `).join('')}
+        </div>
+        <div class="pkg-media-box">
+          <div class="pkg-media-label">주요 배포 매체</div>
+          <div class="pkg-media-logos">
+            ${p.medias.map(m => `
+              <div class="media-chip">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                ${m}
+              </div>
+            `).join('')}
+          </div>
+          <div class="pkg-media-more">${p.more}</div>
+        </div>
+      </div>
+      <div class="pkg-footer">
+        <div class="pkg-tip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="2" x2="12" y2="6"/>
+            <path d="M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+            <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+          </svg>
+          <span class="pkg-tip-text">${p.tip}</span>
+        </div>
+        <button class="pkg-select-btn" onclick="openModal('${p.id}')">선택하기</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectCountry(code, el) {
+  document.querySelectorAll('.country-tab').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentCountry = code;
+  renderPackages();
+}
+
+function searchPkg(q) { pkgSearch = q; renderPackages(); }
+
+function openModal(id) {
+  const pkg = Object.values(PACKAGES).flat().find(p => p.id === id);
+  if (!pkg) return;
+  pendingPkg = pkg;
+  document.getElementById('modalTitle').textContent = pkg.tier + ' 패키지 확인';
+  document.getElementById('modalSub').textContent = pkg.tier + ' 패키지로 기사를 송출하시겠습니까?';
+  document.getElementById('modalPkgName').textContent = pkg.tier + ' — ' + pkg.subtitle;
+  document.getElementById('modalPkgPrice').textContent = pkg.price;
+  document.getElementById('modalOverlay').classList.add('show');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('show');
+  }
+}
+
+function goOverseasOrder() {
+  if (!pendingPkg) return;
+  sessionStorage.setItem('orderType', 'overseas');
+  sessionStorage.setItem('orderItems', JSON.stringify([{
+    name: pendingPkg.tier + ' - ' + pendingPkg.subtitle,
+    price: pendingPkg.price,
+    country: currentCountry
+  }]));
+  window.location.href = 'manuscript.html';
+}
+
+/* ==================== INIT ==================== */
+setTicker('domestic');
+renderDom();
+renderPackages();
+</script>
+</body>
+</html>
