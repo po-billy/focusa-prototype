@@ -175,7 +175,7 @@
 <script>
 const orderId = new URLSearchParams(location.search).get('order')
   || sessionStorage.getItem('lastOrderId') || '';
-const orders  = JSON.parse(localStorage.getItem('focusa_orders') || '[]');
+const orders  = JSON.parse(localStorage.getItem('pressonn_orders') || '[]');
 const order   = orders.find(o => o.id === orderId) || orders[0] || {};
 const ms      = order.manuscript || {};
 let confirmed = order.status === 'confirmed';
@@ -266,15 +266,15 @@ function addHistory(label) {
 }
 
 function saveMs() {
-  const all = JSON.parse(localStorage.getItem('focusa_orders') || '[]');
+  const all = JSON.parse(localStorage.getItem('pressonn_orders') || '[]');
   const idx = all.findIndex(o => o.id === (orderId || order.id));
-  if (idx !== -1) { all[idx].manuscript = ms; localStorage.setItem('focusa_orders', JSON.stringify(all)); }
+  if (idx !== -1) { all[idx].manuscript = ms; localStorage.setItem('pressonn_orders', JSON.stringify(all)); }
 }
 
 function updateOrderStatus(status) {
-  const all = JSON.parse(localStorage.getItem('focusa_orders') || '[]');
+  const all = JSON.parse(localStorage.getItem('pressonn_orders') || '[]');
   const idx = all.findIndex(o => o.id === (orderId || order.id));
-  if (idx !== -1) { all[idx].status = status; localStorage.setItem('focusa_orders', JSON.stringify(all)); }
+  if (idx !== -1) { all[idx].status = status; localStorage.setItem('pressonn_orders', JSON.stringify(all)); }
 }
 
 // Load history

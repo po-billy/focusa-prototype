@@ -307,7 +307,7 @@ function submitOrder() {
 
   // Save order
   const orderId = 'ORD-' + Date.now();
-  const orders  = JSON.parse(localStorage.getItem('focusa_orders') || '[]');
+  const orders  = JSON.parse(localStorage.getItem('pressonn_orders') || '[]');
   const today   = new Date().toLocaleDateString('ko-KR');
 
   orders.unshift({
@@ -323,7 +323,7 @@ function submitOrder() {
     phone,
     payMethod,
   });
-  localStorage.setItem('focusa_orders', JSON.stringify(orders));
+  localStorage.setItem('pressonn_orders', JSON.stringify(orders));
 
   sessionStorage.setItem('lastOrderId',    orderId);
   sessionStorage.setItem('lastOrderTotal', total);
